@@ -64,30 +64,37 @@ class MyDataset(Dataset):
         seg_path = os.path.join(self.masks_dir, self.masks_names[idx]).replace("\\","/")
         image = itk.imread(img_path)
         seg = itk.imread(seg_path)
-        #image = read_image(img_path)
-        #seg = read_image(seg_path)
-        
-        #print(image.shape)
-        #print(seg.shape)
-        #print(self.imgs_names[idx])
-        #print(self.masks_names[idx])
+
         RESimage = resample(image)
         RESseg = resample(seg)
-        #print("Post resampling")
-        #print(RESimage.shape)
-        #print(RESseg.shape)
+
+        CroppedRESImage =  itk.array_from_image(RESimage).astype(np.float32)[:50, :100, :100]
+        CroppedRESSeg = itk.array_from_image(RESseg).astype(np.int16)[:50, :100, :100]
         
-        #imgSliceNum = int(itk.dict_from_image(RESimage)['size'][0])
-        #segSliceNum = int(itk.dict_from_image(RESseg)['size'][0])
+        mean = np.mean(CroppedRESImage)
+        std = np.std(CroppedRESImage)
+        normalized_CroppedRESImage = (CroppedRESImage - mean) / std
         
-        # resample image and mask to (some values here)
-        #if self.transform:
-         #   image = self.transform(image)
-          #  seg = self.transform(seg)
-        #print("NEW version 10 Spacing, Hard Coded Size, Slice Attempt")
-        return itk.array_from_image(RESimage).astype(np.float32)[:50, :100, :100], itk.array_from_image(RESseg).astype(np.int16)[:50, :100, :100]
-        # return image, seg
-       # return itk.array_from_image(image).astype(np.float32), itk.array_from_image(seg).astype(np.int16)[:20, :100, :100]
+        mean = np.mean(CroppedRESSeg)
+        std = np.std(CroppedRESSeg)
+        normalized_CroppedRESSeg = (CroppedRESSeg - mean) / std
+        
+        print("This print is post-normalization")
+        
+
+        #return itk.array_from_image(RESimage).astype(np.float32)[:50, :100, :100], itk.array_from_image(RESseg).astype(np.int16)[:50, :100, :100]
+        
+        return normalized_CroppedRESImage, normalized_CroppedRESSeg
+        
+    def __getITKObjects__(self, idx):
+        img_path = os.path.join(self.img_dir, self.imgs_names[idx]).replace("\\","/")
+        seg_path = os.path.join(self.masks_dir, self.masks_names[idx]).replace("\\","/")
+        image = itk.imread(img_path)
+        seg = itk.imread(seg_path)
+        RESimage = resample(image)
+        RESseg = resample(seg)
+        
+        return RESimage, RESseg
     
     # P1 .5,.5,.5 sims 10,10,10 -> resample to 1,1,1 dims 5,5,5 -> crop to 0:4, 0:4, 0:4
     # P2 .2,.2,.2 sim 24,24,24  -> resample to 1,1,1, dims 6,6,6 -> crop to 0:4, 0:4, 0:4
