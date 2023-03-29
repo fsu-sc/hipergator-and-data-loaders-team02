@@ -59,7 +59,7 @@ class MyDataset(Dataset):
     def __len__(self):
         return self.imgs_len
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx, normalize=True):
         img_path = os.path.join(self.img_dir, self.imgs_names[idx]).replace("\\","/")
         seg_path = os.path.join(self.masks_dir, self.masks_names[idx]).replace("\\","/")
         image = itk.imread(img_path)
@@ -71,30 +71,37 @@ class MyDataset(Dataset):
         CroppedRESImage =  itk.array_from_image(RESimage).astype(np.float32)[:50, :100, :100]
         CroppedRESSeg = itk.array_from_image(RESseg).astype(np.int16)[:50, :100, :100]
         
-        mean = np.mean(CroppedRESImage)
-        std = np.std(CroppedRESImage)
-        normalized_CroppedRESImage = (CroppedRESImage - mean) / std
+        if (normalize==True):
+            mean = np.mean(CroppedRESImage)
+            std = np.std(CroppedRESImage)
+            normalized_CroppedRESImage = (CroppedRESImage - mean) / std
         
-        mean = np.mean(CroppedRESSeg)
-        std = np.std(CroppedRESSeg)
-        normalized_CroppedRESSeg = (CroppedRESSeg - mean) / std
+            mean = np.mean(CroppedRESSeg)
+            std = np.std(CroppedRESSeg)
+            normalized_CroppedRESSeg = (CroppedRESSeg - mean) / std
         
-        print("This print is post-normalization")
+            #print("This print is post-normalization")
         
 
         #return itk.array_from_image(RESimage).astype(np.float32)[:50, :100, :100], itk.array_from_image(RESseg).astype(np.int16)[:50, :100, :100]
         
-        return normalized_CroppedRESImage, normalized_CroppedRESSeg
+            return normalized_CroppedRESImage, normalized_CroppedRESSeg
+        else:
+            return CroppedRESImage, CroppedRESSeg
         
-    def __getITKObjects__(self, idx):
+    def __getITKObjects__(self, idx, resampling=True):
         img_path = os.path.join(self.img_dir, self.imgs_names[idx]).replace("\\","/")
         seg_path = os.path.join(self.masks_dir, self.masks_names[idx]).replace("\\","/")
         image = itk.imread(img_path)
         seg = itk.imread(seg_path)
-        RESimage = resample(image)
-        RESseg = resample(seg)
         
-        return RESimage, RESseg
+        if(resampling==True):
+            RESimage = resample(image)
+            RESseg = resample(seg)
+        
+            return RESimage, RESseg
+        else:
+            return image, seg
     
     # P1 .5,.5,.5 sims 10,10,10 -> resample to 1,1,1 dims 5,5,5 -> crop to 0:4, 0:4, 0:4
     # P2 .2,.2,.2 sim 24,24,24  -> resample to 1,1,1, dims 6,6,6 -> crop to 0:4, 0:4, 0:4
